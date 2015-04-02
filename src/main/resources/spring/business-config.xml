@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    Repository and Service layers
+-->
+<beans xmlns="http://www.springframework.org/schema/beans" 
+	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xmlns:p="http://www.springframework.org/schema/p" 
+	xmlns:context="http://www.springframework.org/schema/context"
+	xmlns:tx="http://www.springframework.org/schema/tx" 
+	xmlns:jpa="http://www.springframework.org/schema/data/jpa"
+	xmlns:mongo="http://www.springframework.org/schema/data/mongo"
+	xsi:schemaLocation="http://www.springframework.org/schema/beans 
+						http://www.springframework.org/schema/beans/spring-beans.xsd
+						http://www.springframework.org/schema/data/jpa 
+						http://www.springframework.org/schema/data/jpa/spring-jpa.xsd
+						http://www.springframework.org/schema/tx 
+						http://www.springframework.org/schema/tx/spring-tx.xsd
+						http://www.springframework.org/schema/context 
+						http://www.springframework.org/schema/context/spring-context.xsd
+						http://www.springframework.org/schema/data/mongo 
+						http://www.springframework.org/schema/data/mongo/spring-mongo-1.0.xsd">
+ 
+    <!-- ========================= RESOURCE DEFINITIONS ========================= -->
+    <context:component-scan base-package="edu.tcu.mi.springmvc.service"/>
+
+    <!-- Configurer that replaces ${...} placeholders with values from a properties file -->
+    <!-- (in this case, JDBC-related settings for the JPA EntityManager definition below) -->
+    <context:property-placeholder location="classpath:spring/data-access.properties"/>
+
+     <!-- enables scanning for @Transactional annotations -->
+    <tx:annotation-driven />
+ 
+
+	<beans profile="mongodb">           
+		
+    	<context:property-placeholder location="classpath:mongodb.properties"/>
+		<bean id="_GenericServiceImp" 
+	    	class="edu.tcu.mi.springmvc.service.GenericServiceImpl" >
+	    	<constructor-arg index="0" ref="_MongodbGenericRepositoryImpl" />
+	    </bean>
+	    <bean id="_MongodbGenericRepositoryImpl" 
+	    	class="edu.tcu.mi.springmvc.repository.mongodb.MongodbGenericRepositoryImpl" >
+	    	<constructor-arg index="0" ref="mongoTemplate" />
+	    </bean>
+	    <bean id="_UserDetailsRepositoryImpl" 
+	    	class="edu.tcu.mi.springmvc.repository.mongodb.UserDetailsRepositoryImpl" >
+	    	<constructor-arg index="0" ref="mongoTemplate" />
+	    </bean> 
+	
+	    <!-- MongoTemplate for connecting and quering the documents in the database -->
+	    <bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
+	        <constructor-arg index="0" name="mongo" ref="mongo" />
+	        <constructor-arg index="1" name="databaseName" value="${mongo.databaseName}" />
+	    </bean>
+	    
+		<!-- Factory bean that creates the Mongo instance -->
+	    <bean id="mongo" class="org.springframework.data.mongodb.core.MongoFactoryBean">
+	        <property name="host" value="${mongo.host.name}" />
+	    </bean>
+	 
+	    <!-- Use this post processor to translate any MongoExceptions thrown in @Repository annotated classes -->
+	    <!-- <bean class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor" /> -->
+
+        <mongo:repositories base-package="edu.tcu.mi.springmvc.repository.mongodb"/>
+	</beans>
+
+    <beans profile="jpa">
+	    <!-- import the dataSource definition -->
+	    <import resource="datasource-config.xml"/>
+	    
+        <!-- JPA EntityManagerFactory -->
+        <bean id="entityManagerFactory" 
+        		class="org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean"
+              p:dataSource-ref="dataSource">
+            <property name="jpaVendorAdapter">
+                <bean class="org.springframework.orm.jpa.vendor.HibernateJpaVendorAdapter" 
+                		p:database="${jpa.database}" p:showSql="${jpa.showSql}"/>
+            </property>
+            <!-- gDickens: BOTH Persistence Unit and Packages to Scan are NOT compatible, persistenceUnit will win -->
+            <property name="persistenceUnitName" value="springmvc"/>
+            <property name="packagesToScan" value="edu.tcu.mi.emrie.springmvc"/>
+        </bean>
+
+        <!-- Transaction manager for a single JPA EntityManagerFactory (alternative to JTA) -->
+        <bean id="transactionManager" class="org.springframework.orm.jpa.JpaTransactionManager" 
+        		p:entityManagerFactory-ref="entityManagerFactory"/>
+
+
+        <!--
+            Post-processor to perform exception translation on @Repository classes (from native
+            exceptions such as JPA PersistenceExceptions to Spring's DataAccessException hierarchy).
+        -->
+        <bean class="org.springframework.dao.annotation.PersistenceExceptionTranslationPostProcessor"/>
+
+        <!--
+            Will automatically be transactional due to @Transactional.
+            EntityManager will be auto-injected due to @PersistenceContext.
+            PersistenceExceptions will be auto-translated due to @Repository.
+        -->
+        <context:component-scan base-package="edu.tcu.mi.springmvc.repository.jpa"/>
+    </beans>
+    
+    
+</beans>

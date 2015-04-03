@@ -22,7 +22,7 @@ public class Facebook4jTest {
 	public void testJarvis() throws FacebookException {
 		String robotName = "[Jarvis] : ";
 		
-		String token = "CAAXN92Ib1qABAKocQY4ZBodEfyJqKlABEV67sbFZBZBmCpCmMJiuHTZAb5WZCxpuKPLaZCp6KdFMQrwtdrSykZB8jia8H8oeFVZBY3YjvgOZCkhNrxr7QbdyrWGZCbcVchlAzC8dHpOtuweuLjTS1TpyTNhtnr1dfFZCipc11LtxiKfC2aZAQAZCi0Wtiucg2p2q6ZACPWcZCWZA7f4UZCaisRoZCTdweuxAvMLmjZACbcZD";
+		String token = "";
 		long expires = 5183999;	
 		AccessToken accessToken = new AccessToken(token, expires);
 		Facebook facebook = new FacebookFactory().getInstance(accessToken );
